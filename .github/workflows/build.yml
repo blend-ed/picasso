@@ -202,7 +202,7 @@ jobs:
 
       - name: Inject GitHub Packages token into plugin
         run: |
-          sed -i "s/__GH_PACKAGES_TOKEN__/${{ secrets.NPM_PACKAGES_TOKEN }}/g" "strains/${{ inputs.STRAIN_PATH }}/plugins/blendxmfe.py"
+          sed -i "s/__GH_PACKAGES_TOKEN__/${{ secrets.NPM_PACKAGES_TOKEN }}/g" "plugins/blendxmfe.py"
 
       - name: Execute extra commands
         run: |

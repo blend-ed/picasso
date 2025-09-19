@@ -171,6 +171,21 @@ jobs:
                       --random-suffix-length "$RANDOM_SUFFIX_LENGTH")
           echo "$ENV_VARS" >> $GITHUB_ENV
 
+      - name: Setup SSH agent for private repositories cloning
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        if: env.SSH_PRIVATE_KEY
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+            ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add GitHub to known hosts
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        if: env.SSH_PRIVATE_KEY
+        run: |
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
       - name: Install Tutor and its dependencies from the version specified in the config.yml
         run: |
           pip install git+https://github.com/overhangio/tutor.git@v$TUTOR_VERSION
@@ -190,21 +205,6 @@ jobs:
         run: |
           pip install git+https://github.com/eduNEXT/tutor-contrib-picasso@v0.2.0
           tutor plugins enable picasso
-
-      - name: Setup SSH agent for private repositories cloning
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-        if: env.SSH_PRIVATE_KEY
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-            ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Add GitHub to known hosts
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-        if: env.SSH_PRIVATE_KEY
-        run: |
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
 
       - name: Inject GitHub Packages token into plugin
         run: |

@@ -174,7 +174,7 @@ jobs:
       - name: Install Tutor and its dependencies from the version specified in the config.yml
         run: |
           pip install git+https://github.com/overhangio/tutor.git@v$TUTOR_VERSION
-          pip install git+https://github.com/blend-ed/blendxtheme.git
+          pip install git+ssh://git@github.com/blend-ed/blendxtheme.git
           pip install git+https://github.com/overhangio/tutor-mfe@v18.1.0
           tutor config save
           tutor plugins list

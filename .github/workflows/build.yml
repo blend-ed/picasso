@@ -97,6 +97,9 @@ on:
       AZURE_REGISTRY_PASSWORD:
         description: 'Azure Container Registry token password'
         required: false
+      GITHUB_PACKAGES_TOKEN:
+        description: 'GitHub Packages token'
+        required: false
 
 jobs:
   build:
@@ -196,6 +199,10 @@ jobs:
         if: env.SSH_PRIVATE_KEY
         run: |
           ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: Inject GitHub Packages token into plugin
+        run: |
+          sed -i "s/__GH_PACKAGES_TOKEN__/${{ secrets.GITHUB_PACKAGES_TOKEN }}/g" "strains/${{ inputs.STRAIN_PATH }}/plugins/blendxmfe.py"
 
       - name: Execute extra commands
         run: |

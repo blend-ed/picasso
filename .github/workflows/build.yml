@@ -88,6 +88,18 @@ on:
       AWS_REGION:
         description: 'AWS region'
         required: false
+      AZURE_CONTAINER_REGISTRY:
+        description: 'Azure Container Registry name'
+        required: false
+      AZURE_REGISTRY_USERNAME:
+        description: 'Azure Container Registry token username'
+        required: false
+      AZURE_REGISTRY_PASSWORD:
+        description: 'Azure Container Registry token password'
+        required: false
+      NPM_PACKAGES_TOKEN:
+        description: 'GitHub Packages token'
+        required: false
 
 jobs:
   build:
@@ -159,20 +171,6 @@ jobs:
                       --random-suffix-length "$RANDOM_SUFFIX_LENGTH")
           echo "$ENV_VARS" >> $GITHUB_ENV
 
-      - name: Install Tutor and its dependencies from the version specified in the config.yml
-        run: |
-          pip install git+https://github.com/overhangio/tutor.git@$TUTOR_VERSION
-          tutor config save
-
-      - name: Update image tag in config.yml locally
-        if: ${{ inputs.USE_DYNAMIC_IMAGE_TAG }}
-        run: tutor config save --set $TARGET_KEY=$DYNAMIC_IMAGE_TAG
-
-      - name: Enable and install picasso plugin in Tutor environment
-        run: |
-          pip install git+https://github.com/eduNEXT/tutor-contrib-picasso@v0.2.0
-          tutor plugins enable picasso
-
       - name: Setup SSH agent for private repositories cloning
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -187,6 +185,31 @@ jobs:
         if: env.SSH_PRIVATE_KEY
         run: |
           ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: Install Tutor and its dependencies from the version specified in the config.yml
+        run: |
+          pip install git+https://github.com/overhangio/tutor.git@v$TUTOR_VERSION
+          pip install git+ssh://git@github.com/blend-ed/blendxtheme.git
+          pip install git+https://github.com/overhangio/tutor-mfe@v18.1.0
+          tutor config save
+          tutor plugins list
+          cat config.yml
+          tutor plugins enable mfe
+          tutor plugins enable blendxtheme
+
+      - name: Update image tag in config.yml locally
+        if: ${{ inputs.USE_DYNAMIC_IMAGE_TAG }}
+        run: tutor config save --set $TARGET_KEY=$DYNAMIC_IMAGE_TAG
+
+      - name: Enable and install picasso plugin in Tutor environment
+        run: |
+          pip install git+https://github.com/eduNEXT/tutor-contrib-picasso@v0.2.0
+          tutor plugins enable picasso
+
+      - name: Inject GitHub Packages token into plugin
+        run: |
+          sed -i "s/__GH_PACKAGES_TOKEN__/${{ secrets.NPM_PACKAGES_TOKEN }}/g" "plugins/blendxmfe.py"
+          cat plugins/blendxmfe.py
 
       - name: Execute extra commands
         run: |
@@ -211,6 +234,14 @@ jobs:
       - name: Login to AWS ECR if Docker registry is AWS
         if: ${{ contains(env.DOCKER_REGISTRY, 'aws') }}
         uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Login to Azure Container Registry if Docker registry is Azure
+        if: ${{ contains(env.DOCKER_REGISTRY, 'azurecr.io') }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.AZURE_CONTAINER_REGISTRY }}.azurecr.io
+          username: ${{ secrets.AZURE_REGISTRY_USERNAME }}
+          password: ${{ secrets.AZURE_REGISTRY_PASSWORD }}
 
       - name: Login to DockerHub if Docker registry is DockerHub or not set
         if: ${{ env.DOCKER_REGISTRY == null || contains(env.DOCKER_REGISTRY, 'docker.io') }}
